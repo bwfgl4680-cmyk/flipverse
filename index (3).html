@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Flipverse — Gravity Is Your Superpower</title>
+<style>
+:root{--ink:#20304b;--muted:#687895;--panel:rgba(255,255,255,.88);--purple:#7457e8;--pink:#ff77ad;--mint:#43d6b0}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--ink);background:radial-gradient(circle at 15% 10%,#fff5cf 0,transparent 28%),linear-gradient(135deg,#b8e9ff,#e8dfff 55%,#d6f7e8)}
+body{display:grid;place-items:center;padding:12px}
+#app{width:min(1120px,100%);height:min(760px,100%);min-height:420px;position:relative;border:5px solid rgba(255,255,255,.92);border-radius:28px;overflow:hidden;box-shadow:0 28px 85px rgba(67,76,145,.25),inset 0 0 0 1px #ffffff;background:linear-gradient(180deg,#9fe5ff 0%,#d5f5ff 56%,#e9f9dc 100%)}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+.hud{position:absolute;inset:14px 16px auto;display:flex;align-items:center;justify-content:space-between;gap:10px;pointer-events:none}
+.brand,.hudbox{background:var(--panel);border:1px solid rgba(255,255,255,.9);box-shadow:0 5px 18px rgba(58,91,142,.1);backdrop-filter:blur(8px);border-radius:16px;padding:9px 13px}
+.brand{font-weight:950;letter-spacing:.5px;font-size:17px}.brand span{color:var(--purple)}
+.hudright{display:flex;gap:8px;align-items:center}.hudbox{font-size:12px;font-weight:800;color:#52617d}.hudbox b{color:#273957;font-size:14px}
+.iconbtn{pointer-events:auto;border:0;border-radius:14px;background:#fff;color:#52617d;font-weight:900;padding:10px 13px;box-shadow:0 5px 15px #4e70a322;cursor:pointer}
+#levelLabel{position:absolute;top:75px;left:50%;transform:translateX(-50%);background:#ffffffc9;border-radius:999px;padding:7px 15px;font-size:12px;font-weight:900;color:#596985;letter-spacing:.5px;white-space:nowrap}
+#message{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,88%);padding:27px 25px;text-align:center;background:linear-gradient(145deg,#fffffffa,#f5f1fffa);border:2px solid white;border-radius:27px;box-shadow:0 22px 65px #365a8a44,0 0 0 7px #ffffff35;display:none;animation:popIn .32s cubic-bezier(.2,.8,.2,1)}
+@keyframes popIn{from{opacity:0;transform:translate(-50%,-46%) scale(.94)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+#message h1{margin:0 0 8px;font-size:29px;color:#34476a}#message p{margin:0 0 18px;color:#66758f;line-height:1.5;font-size:14px}
+.primary{border:0;border-radius:14px;padding:12px 22px;background:linear-gradient(135deg,#8066f0,#5d8df4);color:white;font-weight:900;font-size:14px;box-shadow:0 7px 18px #735fe944;cursor:pointer}
+#levelGrid{display:none;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:0 0 16px}
+.levelPick{border:0;border-radius:12px;padding:12px 4px;background:linear-gradient(145deg,#e9e4ff,#dceeff);color:#53618a;font-weight:950;cursor:pointer;box-shadow:inset 0 0 0 1px #fff}
+.levelPick.locked{background:#edf0f5;color:#aab2c1;cursor:not-allowed}
+.levelPick.current{background:linear-gradient(135deg,#8066f0,#5d8df4);color:white}
+.messageActions{display:flex;justify-content:center;gap:9px;flex-wrap:wrap}
+.secondary{border:2px solid #e5e2f8;border-radius:14px;padding:10px 18px;background:#fff;color:#66708d;font-weight:900;font-size:13px;cursor:pointer}
+#hint{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);background:#ffffffbd;border-radius:999px;padding:8px 14px;font-size:11px;font-weight:800;color:#60708b;white-space:nowrap;pointer-events:none}
+#mobile{position:absolute;inset:auto 15px 14px;display:none;justify-content:space-between;align-items:end;pointer-events:none}
+.pad,.actions{display:flex;gap:9px;pointer-events:auto}
+.control{width:54px;height:50px;border:2px solid #ffffffc9;border-radius:16px;background:#ffffffd9;color:#4f5e7d;font-size:19px;font-weight:950;box-shadow:0 5px 15px #41658a25;touch-action:none}
+.control.flip{width:65px;background:#8066f0;color:white;font-size:12px}
+@media(max-width:700px){body{padding:0}#app{width:100%;height:100%;min-height:0;border:0;border-radius:0}.hud{inset:10px 8px auto;gap:5px}.brand{font-size:12px;padding:8px 8px}.hudright{gap:5px}.hudbox{padding:8px 7px}.hudbox span{display:none}.iconbtn{padding:9px 10px}#levelLabel{top:63px}#hint{bottom:82px;font-size:10px}#mobile{display:flex}#message{padding:22px 17px}#levelGrid{gap:6px}.levelPick{padding:11px 2px}}
+@media(max-height:500px) and (min-width:701px){#hint{display:none}}
+</style>
+</head>
+<body>
+<div id="app">
+<canvas id="game" aria-label="Flipverse game area"></canvas>
+<div class="hud">
+  <div class="brand">✦ <span>FLIP</span>VERSE</div>
+  <div class="hudright">
+    <div class="hudbox"><span>LEVEL </span><b id="levelNum">1 / 5</b></div>
+    <div class="hudbox">★ <b id="stars">0</b></div>
+    <button class="iconbtn" id="pause" title="Pause game">Ⅱ</button>
+    <button class="iconbtn" id="restart" title="Restart level">↻</button>
+    <button class="iconbtn" id="sound" title="Toggle sound">♫</button>
+  </div>
+</div>
+<div id="levelLabel">THE SKY IS NOT THE LIMIT</div>
+<div id="hint">← → MOVE&nbsp;&nbsp; • &nbsp;&nbsp;SPACE / X FLIP GRAVITY&nbsp;&nbsp; • &nbsp;&nbsp;↑ JUMP</div>
+<div id="mobile">
+  <div class="pad"><button class="control" data-key="left">◀</button><button class="control" data-key="right">▶</button></div>
+  <div class="actions"><button class="control" data-key="jump">↑</button><button class="control flip" data-key="flip">FLIP ↕</button></div>
+</div>
+<div id="message">
+  <h1 id="msgTitle">Ready to flip?</h1>
+  <p id="msgText">Find the portal. Flip gravity to reach places that seem impossible.</p>
+  <div id="levelGrid" aria-label="Level selection"></div>
+  <div class="messageActions">
+    <button class="primary" id="msgButton">LET'S PLAY</button>
+    <button class="secondary" id="secondaryButton" style="display:none">LEVELS</button>
+  </div>
+</div>
+</div>
+<script>
+(() => {
+'use strict';
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const levelNum=document.getElementById('levelNum'),starLabel=document.getElementById('stars'),levelLabel=document.getElementById('levelLabel');
+const message=document.getElementById('message'),msgTitle=document.getElementById('msgTitle'),msgText=document.getElementById('msgText'),msgButton=document.getElementById('msgButton');
+const secondaryButton=document.getElementById('secondaryButton'),levelGrid=document.getElementById('levelGrid');
+const W=960,H=600;
+let scale=1,offsetX=0,offsetY=0,last=0,screen='title',levelIndex=0,score=0,soundOn=true,audioCtx=null;
+let keys={left:false,right:false,jump:false},jumpQueued=false,flipQueued=false,particles=[],cameraShake=0;
+const palette={ink:'#344765',purple:'#8066ef',pink:'#ff78ad',mint:'#48d6b0',yellow:'#ffd45c'};
+const levels=[
+ {name:'A LITTLE FLIP',hint:'A tiny flip can change everything.',start:[90,500],goal:[865,500],blocks:[[0,550,960,50],[230,445,145,20],[485,350,150,20],[720,445,145,20]],stars:[[300,405],[555,310],[790,405]],hazards:[]},
+ {name:'UPSIDE DOWN TOWN',hint:'The ceiling is just another floor.',start:[90,500],goal:[865,90],blocks:[[0,550,960,50],[200,430,150,20],[430,310,150,20],[670,190,150,20],[0,0,960,35]],stars:[[260,390],[490,270],[730,150]],hazards:[]},
+ {name:'THE GAP',hint:'Flip in mid-air to cross the wide gap.',start:[90,500],goal:[865,500],blocks:[[0,550,260,50],[390,550,180,50],[700,550,260,50],[120,365,150,20],[430,260,160,20],[690,365,150,20]],stars:[[190,325],[510,220],[760,325]],hazards:[[270,535,120,15],[570,535,130,15]]},
+ {name:'PORTAL PRACTICE',hint:'Use platforms to line up your final approach.',start:[90,500],goal:[865,85],blocks:[[0,550,960,50],[180,445,130,20],[390,340,130,20],[600,235,130,20],[0,0,960,35]],stars:[[235,405],[445,300],[655,195]],hazards:[[330,535,45,15],[535,535,45,15]]},
+ {name:'THE GRAND FLIP',hint:'Collect what you can. Reach the portal!',start:[80,500],goal:[875,90],blocks:[[0,550,220,50],[320,470,130,20],[520,370,130,20],[730,260,130,20],[0,0,960,35],[170,180,120,18]],stars:[[370,430],[570,330],[780,220]],hazards:[[220,535,100,15],[450,535,120,15],[650,535,80,15]]}
+];
+let world,player,cam=0,levelStars=[],collected=0,frame=0;
+function resize(){const r=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);scale=Math.min(r.width/W,r.height/H);offsetX=(r.width-W*scale)/2;offsetY=(r.height-H*scale)/2;ctx.setTransform(dpr,0,0,dpr,0,0)}
+new ResizeObserver(resize).observe(canvas);resize();
+function audio(freq=440,duration=.08,type='sine',vol=.035){if(!soundOn)return;try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();let o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(vol,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+duration);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+duration)}catch(e){}}
+function showMessage(title,text,button,action,secondaryText='',secondaryAction=null){
+ msgTitle.textContent=title;msgText.textContent=text;msgButton.textContent=button;msgButton.onclick=action;
+ levelGrid.style.display='none';levelGrid.innerHTML='';msgButton.style.display='inline-block';
+ secondaryButton.style.display=secondaryText?'inline-block':'none';
+ secondaryButton.textContent=secondaryText;secondaryButton.onclick=secondaryAction;
+ message.style.display='block';
+}
+function hideMessage(){message.style.display='none';levelGrid.style.display='none'}
+function getUnlocked(){try{return Math.max(1,Math.min(levels.length,Number(localStorage.getItem('flipverseUnlocked')||1)))}catch(e){return 1}}
+function saveUnlocked(n){try{localStorage.setItem('flipverseUnlocked',String(Math.max(getUnlocked(),Math.min(levels.length,n))))}catch(e){}}
+function showLevelSelect(){
+ screen='menu';msgTitle.textContent='CHOOSE YOUR LEVEL';msgText.textContent='Complete a level to unlock the next one. Your progress is saved on this device.';
+ msgButton.style.display='none';secondaryButton.style.display='inline-block';secondaryButton.textContent='BACK';secondaryButton.onclick=()=>showMessage('WELCOME TO FLIPVERSE!','A tiny hero. A topsy-turvy world. Reach the glowing portal! Collect stars along the way.','LET’S PLAY',start,'LEVELS',showLevelSelect);
+ levelGrid.innerHTML='';levelGrid.style.display='grid';const unlocked=getUnlocked();
+ levels.forEach((lv,i)=>{const b=document.createElement('button');b.className='levelPick'+(i+1>unlocked?' locked':'')+(i===levelIndex?' current':'');b.textContent=i+1>unlocked?'🔒':String(i+1);b.title=i+1>unlocked?'Complete earlier levels to unlock':'Play '+lv.name;b.disabled=i+1>unlocked;b.onclick=()=>loadLevel(i);levelGrid.appendChild(b)});
+ message.style.display='block';
+}
+function loadLevel(i){levelIndex=i;const l=levels[i];world={blocks:l.blocks.map(a=>({x:a[0],y:a[1],w:a[2],h:a[3]})),hazards:l.hazards.map(a=>({x:a[0],y:a[1],w:a[2],h:a[3]}))};player={x:l.start[0],y:l.start[1],vx:0,vy:0,r:17,gravity:1,onGround:false,face:1};levelStars=l.stars.map((s,j)=>({x:s[0],y:s[1],taken:false,phase:j*1.7}));collected=0;cam=0;particles=[];levelNum.textContent=(i+1)+' / '+levels.length;levelLabel.textContent=l.name;starLabel.textContent=score;keys={left:false,right:false,jump:false};jumpQueued=false;flipQueued=false;screen='playing';hideMessage()}
+function start(){score=0;loadLevel(0)}
+function restart(){if(screen==='playing')loadLevel(levelIndex)}
+function rectsOverlap(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function circleRect(cx,cy,r,b){let x=Math.max(b.x,Math.min(cx,b.x+b.w)),y=Math.max(b.y,Math.min(cy,b.y+b.h));return (cx-x)**2+(cy-y)**2<r*r}
+function burst(x,y,color,n=12){for(let i=0;i<n;i++){let a=Math.random()*Math.PI*2,s=1+Math.random()*4;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:35+Math.random()*20,color,size:2+Math.random()*4})}}
+function flip(){if(screen!=='playing')return;player.gravity*=-1;player.vy=player.gravity*2;burst(player.x,player.y,palette.purple,14);audio(330,.12,'triangle')}
+function update(dt){if(screen!=='playing')return;frame++;
+ const p=player,l=levels[levelIndex],step=Math.min(dt,2);
+ if(flipQueued){flip();flipQueued=false}
+ const dir=(keys.right?1:0)-(keys.left?1:0);p.vx+=dir*.72*step;p.vx*=Math.pow(.82,step);p.vx=Math.max(-5.2,Math.min(5.2,p.vx));if(dir)p.face=dir;
+ if(jumpQueued){if(p.onGround){p.vy=-p.gravity*10.8;audio(520,.07,'triangle')}jumpQueued=false}
+ p.vy+=p.gravity*.48*step;p.vy=Math.max(-12,Math.min(12,p.vy));
+ let oldY=p.y;p.x+=p.vx*step;p.x=Math.max(p.r,Math.min(W-p.r,p.x));
+ // Horizontal collision
+ for(const b of world.blocks){if(circleRect(p.x,p.y,p.r,b)){if(p.x<b.x+b.w/2)p.x=b.x-p.r;else p.x=b.x+b.w+p.r;p.vx=0}}
+ p.y+=p.vy*step;p.onGround=false;
+ for(const b of world.blocks){if(circleRect(p.x,p.y,p.r,b)){if(p.gravity===1&&oldY+p.r<=b.y+8&&p.vy>=0){p.y=b.y-p.r;p.vy=0;p.onGround=true}else if(p.gravity===-1&&oldY-p.r>=b.y+b.h-8&&p.vy<=0){p.y=b.y+b.h+p.r;p.vy=0;p.onGround=true}else if(p.y<b.y+b.h/2){p.y=b.y-p.r;p.vy=0}else{p.y=b.y+b.h+p.r;p.vy=0}}}
+ if(p.y>H+70||p.y<-70){audio(130,.18,'sawtooth');loadLevel(levelIndex);return}
+ for(const h of world.hazards){if(circleRect(p.x,p.y,p.r,h)){audio(110,.2,'sawtooth');loadLevel(levelIndex);return}}
+ for(const s of levelStars){if(!s.taken&&Math.hypot(p.x-s.x,p.y-s.y)<p.r+13){s.taken=true;collected++;score++;starLabel.textContent=score;burst(s.x,s.y,palette.yellow,15);audio(760,.1,'sine')}}
+ const goal={x:l.goal[0]-23,y:l.goal[1]-28,w:46,h:56};
+ if(circleRect(p.x,p.y,p.r,goal)){audio(660,.16,'sine');burst(p.x,p.y,palette.mint,22);screen='won';let bonus=collected===3?' You found every star!':'';saveUnlocked(levelIndex+2);
+ if(levelIndex===levels.length-1)showMessage('VERSE COMPLETE!','You escaped all five worlds and collected '+score+' stars.'+bonus,'PLAY AGAIN',start,'LEVELS',showLevelSelect);
+ else showMessage('LEVEL COMPLETE!','Nice flipping! You collected '+collected+' of 3 stars.'+bonus,'NEXT LEVEL',()=>loadLevel(levelIndex+1),'LEVELS',showLevelSelect);return}
+ for(let q of particles){q.x+=q.vx*step;q.y+=q.vy*step;q.vy+=.08*step;q.life-=step}particles=particles.filter(q=>q.life>0);
+}
+function rounded(x,y,w,h,r,color){ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill()}
+function drawBackground(){let g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#83dfff');g.addColorStop(.48,'#c8efff');g.addColorStop(1,'#fff0d2');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ // warm sun and soft halo
+ let sun=ctx.createRadialGradient(790,112,8,790,112,100);sun.addColorStop(0,'#fff9c8cc');sun.addColorStop(1,'#fff9c800');ctx.fillStyle=sun;ctx.beginPath();ctx.arc(790,112,100,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff4b7';ctx.beginPath();ctx.arc(790,112,34,0,Math.PI*2);ctx.fill();
+ // tiny floating sky sparkles
+ for(let i=0;i<24;i++){let x=(i*137+31)%W,y=(i*83+19)%390;let a=.22+.28*(.5+.5*Math.sin(frame*.035+i));ctx.globalAlpha=a;ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(x,y,1.5+(i%3),0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
+ // distant layered hills
+ for(let i=0;i<6;i++){let x=i*205-70-(frame*.12%205);ctx.fillStyle=['#b3e6c9','#a5dfc8','#c1e9b8'][i%3];ctx.beginPath();ctx.ellipse(x+100,575,190,82,0,0,Math.PI*2);ctx.fill()}
+ // drifting soft clouds
+ for(let i=0;i<7;i++){let x=(i*183+((frame*.18)%1100))%1100-70,y=90+(i%3)*85;ctx.fillStyle='#ffffffa8';ctx.beginPath();ctx.arc(x,y,23,0,Math.PI*2);ctx.arc(x+25,y-9,30,0,Math.PI*2);ctx.arc(x+55,y,22,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffffff38';ctx.beginPath();ctx.ellipse(x+27,y+10,36,7,0,0,Math.PI*2);ctx.fill()}
+}
+function draw(){const r=canvas.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height);ctx.save();ctx.translate(offsetX,offsetY);ctx.scale(scale,scale);drawBackground();
+ if(world){for(let bi=0;bi<world.blocks.length;bi++){const b=world.blocks[bi];let top=['#fff0a8','#b9f3d4','#c9c2ff','#ffd0e2'][bi%4],side=['#d5a95d','#5dbb98','#8e83dc','#e88eaf'][bi%4];rounded(b.x,b.y+6,b.w,b.h,9,side);rounded(b.x,b.y,b.w,b.h,9,top);rounded(b.x+3,b.y+2,Math.max(0,b.w-6),5,4,'#ffffffa8');if(b.w>70){ctx.fillStyle='#ffffff55';for(let sx=b.x+18;sx<b.x+b.w-12;sx+=42){ctx.beginPath();ctx.arc(sx,b.y+b.h-5,2,0,Math.PI*2);ctx.fill()}}}
+ for(const h of world.hazards){rounded(h.x,h.y,h.w,h.h,7,'#ff8c9e');for(let x=h.x+8;x<h.x+h.w;x+=18){ctx.fillStyle='#ffced5';ctx.beginPath();ctx.moveTo(x,h.y+2);ctx.lineTo(x+7,h.y-9);ctx.lineTo(x+14,h.y+2);ctx.fill()}}
+ const l=levels[levelIndex],gx=l.goal[0],gy=l.goal[1];ctx.save();ctx.translate(gx,gy);ctx.rotate(Math.sin(frame*.035)*.035);ctx.shadowColor='#8c65ff';ctx.shadowBlur=28;ctx.strokeStyle='#8a70f4';ctx.lineWidth=10;ctx.beginPath();ctx.ellipse(0,0,24,32,0,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;ctx.strokeStyle='#fff0ff';ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(0,0,16,24,0,0,Math.PI*2);ctx.stroke();ctx.strokeStyle='#ffb7e2';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,0,9,17,0,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#ffffffaa';ctx.beginPath();ctx.arc(-12,-17,3,0,Math.PI*2);ctx.fill();ctx.restore();
+ for(const s of levelStars){if(s.taken)continue;let bob=Math.sin(frame*.08+s.phase)*4;ctx.save();ctx.translate(s.x,s.y+bob);ctx.rotate(frame*.015);ctx.fillStyle='#ffc943';ctx.strokeStyle='#fff2a8';ctx.lineWidth=3;ctx.beginPath();for(let j=0;j<10;j++){let a=-Math.PI/2+j*Math.PI/5,rad=j%2?7:14;ctx.lineTo(Math.cos(a)*rad,Math.sin(a)*rad)}ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
+ for(const q of particles){ctx.globalAlpha=Math.max(0,q.life/45);ctx.fillStyle=q.color;ctx.beginPath();ctx.arc(q.x,q.y,q.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}
+ // player shadow and blob
+ const p=player;if(p){ctx.save();ctx.translate(p.x,p.y);ctx.fillStyle='#3d609333';ctx.beginPath();ctx.ellipse(2,p.gravity===1?23:-23,17,5,0,0,Math.PI*2);ctx.fill();let bob=Math.sin(frame*.16)*1.5;ctx.translate(0,bob);let body=ctx.createRadialGradient(-6,-8,2,0,0,22);body.addColorStop(0,'#c9baff');body.addColorStop(.65,'#927cf5');body.addColorStop(1,'#6652d8');ctx.fillStyle=body;ctx.strokeStyle='#fff';ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,0,p.r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#ff9fc1';ctx.beginPath();ctx.arc(-10,5,3.5,0,Math.PI*2);ctx.arc(10,5,3.5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(-6,-4,4,5,0,0,Math.PI*2);ctx.ellipse(6,-4,4,5,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#35405e';ctx.beginPath();ctx.arc(-5+(p.face>0?1:-1),-4,1.8,0,Math.PI*2);ctx.arc(7+(p.face>0?1:-1),-4,1.8,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#35405e';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,4,5,.15,Math.PI-.15);ctx.stroke();ctx.fillStyle='#ffe17c';ctx.beginPath();ctx.arc(0,-p.r+1,4,0,Math.PI*2);ctx.fill();ctx.restore()}
+ }
+ // subtle gravity indicator
+ if(screen==='playing'){rounded(18,535,132,43,14,'#ffffffc9');ctx.fillStyle='#60718c';ctx.font='bold 12px system-ui';ctx.fillText(player.gravity===1?'⬇ GRAVITY DOWN':'⬆ GRAVITY UP',31,562)}
+ ctx.restore()}
+function loop(t){let dt=last?Math.min((t-last)/16.67,2):1;last=t;update(dt);draw();requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+function keyDown(e){const k=e.key.toLowerCase();if(['arrowleft','arrowright','arrowup',' ','a','d','w','x'].includes(k))e.preventDefault();if(k==='arrowleft'||k==='a')keys.left=true;if(k==='arrowright'||k==='d')keys.right=true;if((k==='arrowup'||k==='w')&&!keys.jump){keys.jump=true;jumpQueued=true}if((k===' '||k==='x')&&!e.repeat)flipQueued=true;if(k==='r')restart()}
+function keyUp(e){const k=e.key.toLowerCase();if(k==='arrowleft'||k==='a')keys.left=false;if(k==='arrowright'||k==='d')keys.right=false;if(k==='arrowup'||k==='w')keys.jump=false}
+window.addEventListener('keydown',keyDown);window.addEventListener('keyup',keyUp);window.addEventListener('blur',()=>{keys={left:false,right:false,jump:false}});
+document.querySelectorAll('.control').forEach(b=>{const key=b.dataset.key;const down=e=>{e.preventDefault();if(key==='left'||key==='right'){keys[key]=true}else if(key==='jump'){if(!keys.jump)jumpQueued=true;keys.jump=true}else if(key==='flip')flipQueued=true};const up=e=>{e.preventDefault();if(key==='left'||key==='right'||key==='jump')keys[key]=false};b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);b.addEventListener('pointerleave',up);b.addEventListener('pointercancel',up)});
+document.getElementById('restart').onclick=restart;
+document.getElementById('pause').onclick=()=>{
+ if(screen==='playing'){screen='paused';keys={left:false,right:false,jump:false};showMessage('PAUSED','Take a breather. Your current level is waiting for you.','RESUME',()=>{screen='playing';hideMessage()},'LEVELS',showLevelSelect)}
+};
+document.getElementById('sound').onclick=()=>{soundOn=!soundOn;document.getElementById('sound').textContent=soundOn?'♫':'♪';if(soundOn)audio(550,.08)};
+showMessage('WELCOME TO FLIPVERSE!','A tiny hero. A topsy-turvy world. Reach the glowing portal! Collect stars along the way.','LET’S PLAY',start,'LEVELS',showLevelSelect);
+})();
+</script>
+</body>
+</html>
